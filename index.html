@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>محاكي ألعاب الريترو - Retro Arcade Hub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --arcade-frame: #1f2833;
+            --neon-blue: #00f3ff;
+            --neon-pink: #ff0055;
+            --neon-gold: #ffcc00;
+            --neon-green: #00ff66;
+            --text-color: #c5c6c7;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: #fff;
+            font-family: 'Tajawal', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 50% 20%, rgba(0, 243, 255, 0.1), transparent 60%),
+                radial-gradient(circle at 80% 80%, rgba(255, 0, 85, 0.1), transparent 60%);
+        }
+
+        header {
+            text-align: center;
+            padding: 20px 10px;
+            width: 100%;
+            background: rgba(15, 15, 25, 0.8);
+            border-bottom: 2px solid var(--neon-blue);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1.5rem;
+            color: var(--neon-gold);
+            text-shadow: 3px 3px 0px var(--neon-pink), 0 0 10px var(--neon-gold);
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: var(--neon-blue);
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            padding: 0 15px 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Menu Grid */
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 20px;
+            width: 100%;
+        }
+
+        .game-card {
+            background: linear-gradient(145deg, #151922, #1e2430);
+            border: 2px solid #2c3545;
+            border-radius: 12px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .game-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 4px;
+            background: var(--card-color, var(--neon-blue));
+            box-shadow: 0 0 10px var(--card-color, var(--neon-blue));
+        }
+
+        .game-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--card-color, var(--neon-blue));
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6), 0 0 15px var(--card-color, var(--neon-blue));
+        }
+
+        .game-title {
+            font-size: 1.2rem;
+            font-weight: 900;
+            color: #fff;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .game-desc {
+            font-size: 0.9rem;
+            color: #a0a5b5;
+            line-height: 1.4;
+            margin-bottom: 15px;
+        }
+
+        .play-btn {
+            background: var(--card-color, var(--neon-blue));
+            color: #000;
+            font-weight: 900;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: center;
+            font-size: 0.95rem;
+            transition: 0.2s;
+        }
+
+        .game-card:hover .play-btn {
+            filter: brightness(1.2);
+            box-shadow: 0 0 10px var(--card-color, var(--neon-blue));
+        }
+
+        /* Arcade Screen Container */
+        .arcade-cabinet {
+            display: none;
+            width: 100%;
+            background: #11141a;
+            border: 4px solid #2a3242;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8), inset 0 0 15px rgba(0,0,0,0.9);
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        .arcade-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            background: #1a202c;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+        }
+
+        .active-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--neon-gold);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-end-play {
+            background: linear-gradient(180deg, #ff0055, #b3003b);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-family: 'Tajawal', sans-serif;
+            font-weight: 900;
+            font-size: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(255, 0, 85, 0.5), inset 0 2px 0 rgba(255,255,255,0.3);
+            transition: all 0.2s ease;
+            animation: pulse-end 2s infinite;
+        }
+
+        @keyframes pulse-end {
+            0% { box-shadow: 0 0 10px rgba(255, 0, 85, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(255, 0, 85, 0.9); }
+            100% { box-shadow: 0 0 10px rgba(255, 0, 85, 0.5); }
+        }
+
+        .btn-end-play:hover {
+            transform: scale(1.05);
+            background: linear-gradient(180deg, #ff2a75, #d60047);
+        }
+
+        .screen-wrapper {
+            position: relative;
+            background: #000;
+            border: 3px solid #333;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+            margin-bottom: 15px;
+            width: 100%;
+            max-width: 640px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Scanline effect */
+        .screen-wrapper::after {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            background-size: 100% 4px;
+            z-index: 2;
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        canvas {
+            background: #000;
+            display: block;
+            width: 100%;
+            max-width: 640px;
+            height: auto;
+            aspect-ratio: 4/3;
+        }
+
+        /* Controls Overlay / Touch D-pad */
+        .controls-panel {
+            width: 100%;
+            max-width: 640px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #181d28;
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid #2d3748;
+        }
+
+        .dpad {
+            display: grid;
+            grid-template-columns: repeat(3, 40px);
+            grid-template-rows: repeat(3, 40px);
+            gap: 2px;
+        }
+
+        .dbtn {
+            background: #2d3748;
+            border: 1px solid #4a5568;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+
+        .dbtn:active { background: var(--neon-blue); color: #000; }
+        .dbtn-up { grid-column: 2; grid-row: 1; }
+        .dbtn-left { grid-column: 1; grid-row: 2; }
+        .dbtn-right { grid-column: 3; grid-row: 2; }
+        .dbtn-down { grid-column: 2; grid-row: 3; }
+
+        .action-btns {
+            display: flex;
+            gap: 15px;
+        }
+
+        .abtn {
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            border: none;
+            color: #fff;
+            font-weight: bold;
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.4);
+            touch-action: manipulation;
+        }
+
+        .abtn:active { transform: translateY(3px); box-shadow: none; }
+        .abtn-a { background: #e53e3e; }
+        .abtn-b { background: #dd6b20; }
+
+        .key-hint {
+            color: #718096;
+            font-size: 0.8rem;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 600px) {
+            h1 { font-size: 1.1rem; }
+            .arcade-cabinet { padding: 10px; }
+            .controls-panel { padding: 10px; }
+            .dpad { grid-template-columns: repeat(3, 35px); grid-template-rows: repeat(3, 35px); }
+            .abtn { width: 45px; height: 45px; font-size: 0.9rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>RETRO ARCADE HUB</h1>
+        <div class="subtitle">محاكي الألعاب الكلاسيكية الخمسية والثمانينية</div>
+    </header>
+
+    <div class="container">
+        <!-- Game Selection Grid -->
+        <div id="gamesMenu" class="games-grid"></div>
+
+        <!-- Arcade Screen Cabinet -->
+        <div id="arcadeCabinet" class="arcade-cabinet">
+            <div class="arcade-header">
+                <div class="active-title" id="activeGameTitle">
+                    🎮 Super Mario Bros
+                </div>
+                <button class="btn-end-play" id="btnEndPlay">
+                    🛑 إنهاء اللعب (End Play)
+                </button>
+            </div>
+
+            <div class="screen-wrapper">
+                <canvas id="gameCanvas" width="640" height="480"></canvas>
+            </div>
+
+            <div class="controls-panel">
+                <div class="dpad">
+                    <button class="dbtn dbtn-up" id="btnUp">▲</button>
+                    <button class="dbtn dbtn-left" id="btnLeft">◄</button>
+                    <button class="dbtn dbtn-right" id="btnRight">►</button>
+                    <button class="dbtn dbtn-down" id="btnDown">▼</button>
+                </div>
+                <div>
+                    <div class="action-btns">
+                        <button class="abtn abtn-b" id="btnB">B</button>
+                        <button class="abtn abtn-a" id="btnA">A</button>
+                    </div>
+                    <div class="key-hint">الأسهم / Z(A) / X(B)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game Registry & Definitions
+        const GAMES_DATA = [
+            { id: 'mario', name: '1. Super Mario Bros', desc: 'مغامرة القفز الكلاسيكية، اجمع النقاط وتفاد الأعداء للوصول للنهاية.', color: '#ff4757', icon: '🍄' },
+            { id: 'sonic', name: '2. Sonic the Hedgehog', desc: 'سرعة فائقة وجَمْع الخواتم الذهبية وتدمير الآليين.', color: '#2ed573', icon: '🦔' },
+            { id: 'contra', name: '3. Contra', desc: 'أكشن وحرب، إطلاق نار مكثف وتفادي قذائف الأعداء.', color: '#ffa502', icon: '💥' },
+            { id: 'metalslug', name: '4. Metal Slug 3', desc: 'رسوم 2D رائعة، قتال وقنابل وتدمير مركبات الأعداء.', color: '#ff6b81', icon: '🎖️' },
+            { id: 'mk2', name: '5. Mortal Kombat 2', desc: 'قتال كلاسيكي، نفذ الضربات القاضية واهزم المنافس.', color: '#9b59b6', icon: '🥊' },
+            { id: 'sf2', name: '6. Street Fighter II', desc: 'قتال الشوارع الأسطوري، استخدم الكومبو واللكمات.', color: '#1e90ff', icon: '🥋' },
+            { id: 'castlevania', name: '7. Castlevania', desc: 'استكشاف القلعة المظلمة ومحاربة الوحوش والسحر.', color: '#747d8c', icon: '🏰' },
+            { id: 'pacman', name: '8. Pac-Man', desc: 'اللعبة الشهيرة، التهم النقاط الصفراء وتجنب الأشباح.', color: '#eccc68', icon: '🟡' },
+            { id: 'tetris', name: '9. Tetris', desc: 'ترتيب المكعبات المتساقطة وإكمال الأسطر بنجاح.', color: '#70a1ff', icon: '🧩' },
+            { id: 'prince', name: '10. Prince of Persia 1989', desc: 'قفز ومغامرة السيوف، الهروب من السجن قبل فوات الأوان.', color: '#e84118', icon: '⚔️' }
+        ];
+
+        // Global State
+        let currentGame = null;
+        let animationFrameId = null;
+        let synth = null;
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Input Tracking
+        const keys = { left: false, right: false, up: false, down: false, btnA: false, btnB: false };
+
+        // Sound Effects Helper
+        function playBeep(freq = 440, type = 'sine', duration = '8n') {
+            try {
+                if (!synth) synth = new Tone.Synth().toDestination();
+                synth.triggerAttackRelease(freq, duration);
+            } catch (e) {}
+        }
+
+        // Initialize UI
+        const gamesMenu = document.getElementById('gamesMenu');
+        const arcadeCabinet = document.getElementById('arcadeCabinet');
+        const activeGameTitle = document.getElementById('activeGameTitle');
+        const btnEndPlay = document.getElementById('btnEndPlay');
+
+        GAMES_DATA.forEach(game => {
+            const card = document.createElement('div');
+            card.className = 'game-card';
+            card.style.setProperty('--card-color', game.color);
+            card.innerHTML = `
+                <div>
+                    <div class="game-title">${game.icon} ${game.name}</div>
+                    <div class="game-desc">${game.desc}</div>
+                </div>
+                <button class="play-btn">ابدأ اللعب 🎮</button>
+            `;
+            card.onclick = () => startGame(game);
+            gamesMenu.appendChild(card);
+        });
+
+        btnEndPlay.onclick = stopGame;
+
+        // Controller Handlers (Touch + Click)
+        function bindTouchBtn(id, keyProp) {
+            const btn = document.getElementById(id);
+            const start = (e) => { e.preventDefault(); keys[keyProp] = true; };
+            const end = (e) => { e.preventDefault(); keys[keyProp] = false; };
+            btn.addEventListener('touchstart', start);
+            btn.addEventListener('touchend', end);
+            btn.addEventListener('mousedown', start);
+            btn.addEventListener('mouseup', end);
+            btn.addEventListener('mouseleave', end);
+        }
+
+        bindTouchBtn('btnUp', 'up');
+        bindTouchBtn('btnDown', 'down');
+        bindTouchBtn('btnLeft', 'left');
+        bindTouchBtn('btnRight', 'right');
+        bindTouchBtn('btnA', 'btnA');
+        bindTouchBtn('btnB', 'btnB');
+
+        // Keyboard Event Handlers
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') keys.up = true;
+            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') keys.down = true;
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = true;
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = true;
+            if (e.key === 'z' || e.key === 'Z' || e.key === ' ') keys.btnA = true;
+            if (e.key === 'x' || e.key === 'X' || e.key === 'Shift') keys.btnB = true;
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') keys.up = false;
+            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') keys.down = false;
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = false;
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = false;
+            if (e.key === 'z' || e.key === 'Z' || e.key === ' ') keys.btnA = false;
+            if (e.key === 'x' || e.key === 'X' || e.key === 'Shift') keys.btnB = false;
+        });
+
+        // Game Launchers & Engines
+        function startGame(game) {
+            Tone.start();
+            playBeep(523.25, 'triangle', '8n');
+            gamesMenu.style.display = 'none';
+            arcadeCabinet.style.display = 'flex';
+            activeGameTitle.innerHTML = `${game.icon} ${game.name}`;
+
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+
+            switch (game.id) {
+                case 'mario': initMario(); break;
+                case 'sonic': initSonic(); break;
+                case 'contra': initContra(); break;
+                case 'metalslug': initMetalSlug(); break;
+                case 'mk2': initMortalKombat(); break;
+                case 'sf2': initStreetFighter(); break;
+                case 'castlevania': initCastlevania(); break;
+                case 'pacman': initPacman(); break;
+                case 'tetris': initTetris(); break;
+                case 'prince': initPrince(); break;
+            }
+        }
+
+        function stopGame() {
+            playBeep(261.63, 'square', '8n');
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            arcadeCabinet.style.display = 'none';
+            gamesMenu.style.display = 'grid';
+            currentGame = null;
+        }
+
+        // --- 1. SUPER MARIO BROS ---
+        function initMario() {
+            let p = { x: 50, y: 350, vx: 0, vy: 0, grounded: false, score: 0 };
+            let coins = [{x: 200, y: 300}, {x: 250, y: 300}, {x: 400, y: 250}];
+
+            function loop() {
+                ctx.fillStyle = '#5c94fc'; ctx.fillRect(0,0,640,480);
+                // Ground
+                ctx.fillStyle = '#e75910'; ctx.fillRect(0, 400, 640, 80);
+                ctx.fillStyle = '#00b800'; ctx.fillRect(0, 400, 640, 15);
+
+                // Physics
+                if (keys.left) p.vx = -4; else if (keys.right) p.vx = 4; else p.vx = 0;
+                if (keys.btnA && p.grounded) { p.vy = -12; p.grounded = false; playBeep(600, 'sine', '16n'); }
+
+                p.vy += 0.6; p.x += p.vx; p.y += p.vy;
+                if (p.y >= 360) { p.y = 360; p.vy = 0; p.grounded = true; }
+                if (p.x < 0) p.x = 0; if (p.x > 600) p.x = 600;
+
+                // Draw Mario
+                ctx.fillStyle = '#ff0000'; ctx.fillRect(p.x, p.y, 30, 40);
+                ctx.fillStyle = '#0000ff'; ctx.fillRect(p.x+5, p.y+20, 20, 20);
+
+                // Coins
+                coins.forEach((c, idx) => {
+                    ctx.fillStyle = '#ffd700';
+                    ctx.beginPath(); ctx.arc(c.x, c.y, 8, 0, Math.PI*2); ctx.fill();
+                    if (Math.hypot(p.x+15 - c.x, p.y+20 - c.y) < 25) {
+                        p.score += 100;
+                        coins.splice(idx, 1);
+                        playBeep(900, 'triangle', '16n');
+                    }
+                });
+
+                // UI
+                ctx.fillStyle = '#fff'; ctx.font = '20px Tajawal';
+                ctx.fillText(`النقاط: ${p.score}`, 20, 30);
+                ctx.fillText(`Super Mario Bros`, 480, 30);
+
+                animationFrameId = requestAnimationFrame(loop);
+            }
+            loop();
+        }
+
+        // --- 2. SONIC THE HEDGEHOG ---
+        function initSonic() {
+            let x = 50, y = 350, speed = 0, rings = 0;
+            function loop() {
+                ctx.fillStyle = '#000033'; ctx.fillRect(0,0,640,480);
+                // Loop Track
+                ctx.strokeStyle = '#00a8ff'; ctx.lineWidth = 10;
+                  
